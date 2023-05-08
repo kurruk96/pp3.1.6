@@ -10,8 +10,6 @@ import ru.kata.spring.boot_security.demo.service.RoleService;
 import ru.kata.spring.boot_security.demo.service.UserService;
 
 import javax.validation.Valid;
-import java.security.Principal;
-import java.util.Objects;
 
 @Controller
 @RequestMapping(value = "/admin")
@@ -46,7 +44,7 @@ public class AdminController {
     public String addNewUser(@ModelAttribute("user") @Valid User user,
                              BindingResult bindingResult,
                              @RequestParam(defaultValue = "ROLE_USER", value = "role") String[] roles) {
-        if (!userService.findByName(user.getUsername())) {
+        if (!userService.findUsernameInBD(user.getUsername())) {
             bindingResult.addError(new ObjectError("usernameNotUnique", "Username is already taken"));
         }
         if (bindingResult.hasErrors()) {
@@ -70,7 +68,7 @@ public class AdminController {
                          BindingResult bindingResult,
                          @PathVariable("id") Long id,
                          @RequestParam(defaultValue = "ROLE_USER", value = "role") String[] roles) {
-        if (!userService.findByName(user.getUsername())) {
+        if (!userService.findUsernameInBD(user.getUsername())) {
             bindingResult.addError(new ObjectError("usernameNotUnique", "Username is already taken"));
         }
         if (bindingResult.hasErrors()) {

@@ -4,7 +4,6 @@ package ru.kata.spring.boot_security.demo.service;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.kata.spring.boot_security.demo.dao.UserRepository;
@@ -18,11 +17,9 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -31,9 +28,15 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean findByName(String username) {
+    public boolean findUsernameInBD(String username) {
         User userFromBD = userRepository.findByUsername(username);
         return userFromBD == null;
+    }
+
+    @Override
+    public User findUserByUsername(String username) {
+        User userFromBD = userRepository.findByUsername(username);
+        return userFromBD;
     }
 
     @Override
@@ -45,7 +48,6 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void save(User user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.saveAndFlush(user);
     }
 
@@ -59,7 +61,6 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void update(Long id, User user) {
         user.setId(id);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.saveAndFlush(user);
     }
 
