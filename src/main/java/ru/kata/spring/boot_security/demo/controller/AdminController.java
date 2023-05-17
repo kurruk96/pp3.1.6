@@ -1,15 +1,13 @@
 package ru.kata.spring.boot_security.demo.controller;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.*;
 import ru.kata.spring.boot_security.demo.models.User;
 import ru.kata.spring.boot_security.demo.service.RoleService;
 import ru.kata.spring.boot_security.demo.service.UserService;
-
-import javax.validation.Valid;
 
 @Controller
 @RequestMapping(value = "/admin")
@@ -22,67 +20,38 @@ public class AdminController {
         this.roleService = roleService;
     }
 
-    @GetMapping("users/{id}")
-    public String adminPage(@PathVariable("id") Long id, Model model) {
-        model.addAttribute("user", userService.findById(id));
-        return "show_user_by_id";
-    }
-
-    @GetMapping("/users")
+    @GetMapping
     public String allUsers(Model model) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = (User) authentication.getPrincipal();
+        model.addAttribute("currentUser", currentUser);
         model.addAttribute("users", userService.findAll());
-        return "users";
+        model.addAttribute("roles", roleService.findAllRoles());
+        model.addAttribute("userAddNewUser", new User());
+        return "admin";
     }
 
-    @GetMapping("users/new")
-    public String newUser(Model model) {
-        model.addAttribute("user", new User());
-        return "new";
-    }
-
-    @PostMapping("users/new")
-    public String addNewUser(@ModelAttribute("user") @Valid User user,
-                             BindingResult bindingResult,
-                             @RequestParam(defaultValue = "ROLE_USER", value = "role") String[] roles) {
-        if (!userService.findUsernameInBD(user.getUsername())) {
-            bindingResult.addError(new ObjectError("usernameNotUnique", "Username is already taken"));
-        }
-        if (bindingResult.hasErrors()) {
-            return "new";
-        }
-        else {
+    @PostMapping("new")
+    public String addNewUser(@ModelAttribute("user") User user,
+                             @RequestParam(value = "rolesList[]") String[] roles) {
             user.setRoles(roleService.makeSetRolesFromArray(roles));
             userService.save(user);
-            return "redirect:/admin/users";
-        }
+            return "redirect:/admin";
     }
 
-    @GetMapping("users/{id}/edit")
-    public String edit(@PathVariable("id") Long id, Model model) {
-        model.addAttribute("user", userService.findById(id));
-        return "edit";
-    }
-
-    @PatchMapping("users/{id}/edit")
-    public String update(@ModelAttribute("user") @Valid User user,
-                         BindingResult bindingResult,
+    @PatchMapping("{id}/edit")
+    public String update(@ModelAttribute("user")
+                             User user,
                          @PathVariable("id") Long id,
-                         @RequestParam(defaultValue = "ROLE_USER", value = "role") String[] roles) {
-        if (!userService.findUsernameInBD(user.getUsername())) {
-            bindingResult.addError(new ObjectError("usernameNotUnique", "Username is already taken"));
-        }
-        if (bindingResult.hasErrors()) {
-            return "edit";
-        } else {
+                         @RequestParam(value = "rolesListEdit[]", required = false) String[] roles) {
             user.setRoles(roleService.makeSetRolesFromArray(roles));
             userService.update(id, user);
-            return "redirect:/admin/users";
-        }
+            return "redirect:/admin";
     }
 
-    @DeleteMapping("users/{id}/delete")
+    @DeleteMapping("{id}/delete")
     public String delete(@PathVariable("id") Long id) {
         userService.deleteById(id);
-        return "redirect:/admin/users";
+        return "redirect:/admin";
     }
 }
